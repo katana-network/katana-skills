@@ -29,7 +29,7 @@ Read-only on-chain queries for market data, gas estimation, transaction debuggin
 | USDC | `0x203A662b0BD271A6ed5a60EdFbd04bFce608FD36` | 6 |
 | USDT | `0x2DCa96907fde857dd3D816880A0df407eeB2D2F2` | 6 |
 | USDS | `0x62D6A123E8D19d06d68cf0d2294F9A3A0362c6b3` | 18 |
-| AUSD | `0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a` | 18 |
+| AUSD | `0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a` | 6 |
 | LBTC | `0xecAc9C5F704e954931349Da37F60E39f515c11c1` | 8 |
 | weETH | `0x9893989433e7a383Cb313953e4c2365107dc19a7` | 18 |
 | wstETH | `0x7Fb4D0f51544F24F385a421Db6e7D4fC71Ad8e5C` | 18 |
@@ -37,8 +37,16 @@ Read-only on-chain queries for market data, gas estimation, transaction debuggin
 | SUSHI | `0x17BFF452dae47e07CeA877Ff0E1aba17eB62b0aB` | 18 |
 | vKAT | `0x106F7D67Ea25Cb9eFf5064CF604ebf6259Ff296d` | — |
 | avKAT | `0x7231dbaCdFc968E07656D12389AB20De82FbfCeB` | 18 |
+| jitoSOL | `0x6C16E26013f2431e8B2e1Ba7067ECCcad0Db6C52` | 18 |
+| BTCK | `0xB0F70C0bD6FD87dbEb7C10dC692a2a6106817072` | 8 |
+| POL | `0xb24e3035d1FCBC0E43CF3143C3Fd92E53df2009b` | 18 |
+| YFI | `0x476eaCd417cD65421bD34fca054377658BB5E02b` | 18 |
+| uSOL | `0x9B8Df6E244526ab5F6e6400d331DB28C8fdDdb55` | 18 |
+| uSUI | `0xb0505e5a99abd03d94a1169e638B78EDfEd26ea4` | 18 |
+| uADA | `0xa3A34A0D9A08CCDDB6Ed422Ac0A28a06731335aA` | 18 |
+| uXRP | `0x2615a94df961278DcbC41Fb0a54fEc5f10a693aE` | 18 |
 
-Decimals: USDC/USDT = 6, WBTC/LBTC = 8, all others = 18. Stablecoins (USDC, USDT, USDS, AUSD) can be assumed $1 for quick estimates.
+Decimals: USDC/USDT/AUSD = 6, WBTC/LBTC/BTCK = 8, all others = 18. Stablecoins (USDC, USDT, USDS, AUSD) can be assumed $1 for quick estimates.
 
 ## On-Chain Queries
 

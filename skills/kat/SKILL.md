@@ -15,7 +15,7 @@ The KAT token ecosystem on Katana Network, including staking (vKAT), auto-compou
 
 KAT is the native ERC-20 token of the Katana Foundation, deployed on Katana Network (chain ID 747474). It has 18 decimals.
 
-**KAT is fully transferable as of March 18, 2026.** All token flows — `transfer()`, `transferFrom()`, staking (KAT → vKAT), and vault deposits (KAT → avKAT) — are enabled. The unlock was a permanent one-time operation called by the UNLOCKER role via `unlockAndRenounceUnlocker()`.
+**KAT is fully transferable.** All token flows — `transfer()`, `transferFrom()`, staking (KAT → vKAT), and vault deposits (KAT → avKAT) — are enabled.
 
 KAT itself has **no voting power**. Users must convert it into one of two staking derivatives to participate in governance and earn rewards.
 
@@ -23,7 +23,7 @@ KAT itself has **no voting power**. Users must convert it into one of two stakin
 
 | Token | Standard | Transferable | Voting Power | Rewards |
 |-------|----------|-------------|-------------|---------|
-| **KAT** | ERC-20 | Yes (since March 18, 2026) | None | None |
+| **KAT** | ERC-20 | Yes | None | None |
 | **vKAT** | ERC-721 (non-transferable NFT) | No (non-transferable) | Yes — 1:1 with locked amount | Manual claim via Merkl |
 | **avKAT** | ERC-4626 vault shares | Yes (liquid, tradeable) | Delegated to CompoundStrategy | Auto-compounded |
 
@@ -159,8 +159,6 @@ getActiveGauges() → address[]
 
 ### KAT Token
 ```
-unlockAndRenounceUnlocker()    // one-time, irreversible — called by UNLOCKER role
-locked() → bool                // true until unlock
 transfer(address to, uint256 amount)
 approve(address spender, uint256 amount)
 ```
@@ -196,7 +194,7 @@ approve(address spender, uint256 amount)
 
 ## Common Mistakes
 
-- **KAT is now unlocked.** As of March 18, 2026, KAT is fully transferable. All transfers, staking to vKAT, and depositing to avKAT are enabled.
+- **KAT is fully transferable.** All transfers, staking to vKAT, and depositing to avKAT are enabled.
 - **Withdrawing without resetting votes.** A vKAT position with active gauge votes cannot begin withdrawal. Call `GaugeVoter.reset(tokenId)` first, or use the combined `resetVotesAndBeginWithdrawal(tokenId)`.
 - **Confusing vKAT and avKAT exit paths.** vKAT requires a 45-day cooldown with exit fee. avKAT can be sold instantly on DEX with no protocol fee. Users wanting immediate exit should use the avKAT → DEX path.
 - **Expecting instant rewards.** Merkl rewards are computed offchain every ~2 hours and merkle roots are pushed onchain every ~8 hours. New stakers won't see rewards immediately.
