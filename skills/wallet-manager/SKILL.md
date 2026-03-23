@@ -32,7 +32,7 @@ All write operations produce unsigned transaction payloads (`{to, data, value, c
 | USDC | `0x203A662b0BD271A6ed5a60EdFbd04bFce608FD36` | 6 | USD stablecoin |
 | USDT | `0x2DCa96907fde857dd3D816880A0df407eeB2D2F2` | 6 | USD stablecoin |
 | USDS | `0x62D6A123E8D19d06d68cf0d2294F9A3A0362c6b3` | 18 | USD stablecoin |
-| AUSD | `0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a` | 18 | Agora USD |
+| AUSD | `0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a` | 6 | Agora USD |
 | LBTC | `0xecAc9C5F704e954931349Da37F60E39f515c11c1` | 8 | Lombard BTC |
 | weETH | `0x9893989433e7a383Cb313953e4c2365107dc19a7` | 18 | Wrapped eETH |
 | wstETH | `0x7Fb4D0f51544F24F385a421Db6e7D4fC71Ad8e5C` | 18 | Wrapped stETH |
@@ -40,6 +40,14 @@ All write operations produce unsigned transaction payloads (`{to, data, value, c
 | SUSHI | `0x17BFF452dae47e07CeA877Ff0E1aba17eB62b0aB` | 18 | SushiSwap token |
 | vKAT | `0x106F7D67Ea25Cb9eFf5064CF604ebf6259Ff296d` | — | ERC-721 NFT (non-transferable staked KAT) |
 | avKAT | `0x7231dbaCdFc968E07656D12389AB20De82FbfCeB` | 18 | ERC-4626 vault shares (liquid staked KAT) |
+| jitoSOL | `0x6C16E26013f2431e8B2e1Ba7067ECCcad0Db6C52` | 18 | Jito Staked SOL |
+| BTCK | `0xB0F70C0bD6FD87dbEb7C10dC692a2a6106817072` | 8 | BTC Katana |
+| POL | `0xb24e3035d1FCBC0E43CF3143C3Fd92E53df2009b` | 18 | POL |
+| YFI | `0x476eaCd417cD65421bD34fca054377658BB5E02b` | 18 | yearn.finance |
+| uSOL | `0x9B8Df6E244526ab5F6e6400d331DB28C8fdDdb55` | 18 | Universal SOL |
+| uSUI | `0xb0505e5a99abd03d94a1169e638B78EDfEd26ea4` | 18 | Universal SUI |
+| uADA | `0xa3A34A0D9A08CCDDB6Ed422Ac0A28a06731335aA` | 18 | Universal ADA |
+| uXRP | `0x2615a94df961278DcbC41Fb0a54fEc5f10a693aE` | 18 | Universal XRP |
 
 ## Contracts & Functions
 
@@ -141,7 +149,7 @@ Note that unlimited approval grants unlimited spending rights. Users may prefer 
   Passing the wrong spender means the subsequent DeFi tx will revert with an insufficient allowance error.
 - **Not checking balances before constructing transactions.** Always call `balanceOf` first. Constructing a transfer or approve for more tokens than the user holds will produce a tx that reverts on submission.
 - **Confusing ETH and WETH.** A transfer with native ETH sends via `msg.value`. WETH is the ERC-20 vbETH token at a specific address. Users may say "ETH" when they mean their wrapped balance — check both and confirm with the user.
-- **Wrong decimal conversion.** USDC and USDT use 6 decimals, WBTC and LBTC use 8. All others use 18. Always multiply/divide by `10^decimals` when converting between human-readable and raw amounts.
+- **Wrong decimal conversion.** USDC, USDT, and AUSD use 6 decimals. WBTC, LBTC, and BTCK use 8. All others use 18. Always multiply/divide by `10^decimals` when converting between human-readable and raw amounts.
 
 ## Cross-References
 

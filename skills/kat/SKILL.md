@@ -15,7 +15,7 @@ The KAT token ecosystem on Katana Network, including staking (vKAT), auto-compou
 
 KAT is the native ERC-20 token of the Katana Foundation, deployed on Katana Network (chain ID 747474). It has 18 decimals.
 
-**KAT is fully transferable as of March 18, 2026.** All token flows — `transfer()`, `transferFrom()`, staking (KAT → vKAT), and vault deposits (KAT → avKAT) — are enabled. The unlock was a permanent one-time operation called by the UNLOCKER role via `unlockAndRenounceUnlocker()`.
+**KAT is fully transferable.** All token flows — `transfer()`, `transferFrom()`, staking (KAT → vKAT), and vault deposits (KAT → avKAT) — are enabled.
 
 KAT itself has **no voting power**. Users must convert it into one of two staking derivatives to participate in governance and earn rewards.
 
@@ -23,15 +23,15 @@ KAT itself has **no voting power**. Users must convert it into one of two stakin
 
 | Token | Standard | Transferable | Voting Power | Rewards |
 |-------|----------|-------------|-------------|---------|
-| **KAT** | ERC-20 | Yes (since March 18, 2026) | None | None |
+| **KAT** | ERC-20 | Yes | None | None |
 | **vKAT** | ERC-721 (non-transferable NFT) | No (non-transferable) | Yes — 1:1 with locked amount | Manual claim via Merkl |
 | **avKAT** | ERC-4626 vault shares | Yes (liquid, tradeable) | Delegated to CompoundStrategy | Auto-compounded |
 
 ### vKAT (Active Staking)
-A non-transferable NFT representing a locked KAT position in the VotingEscrow contract. Each lock is a separate NFT with its own token ID. Users can hold multiple vKAT NFTs. Grants direct gauge voting power. Exiting requires a 45-day cooldown with a sliding exit fee (2.5%–25%).
+A non-transferable NFT representing a locked KAT position in the VotingEscrow contract. Each lock is a separate NFT with its own token ID. Users can hold multiple vKAT NFTs. Grants direct gauge voting power. Exiting requires a cooldown period with a sliding exit fee — parameters are read live from the on-chain ExitQueue contract and may change over time.
 
 ### avKAT (Passive Staking)
-A liquid, transferable ERC-4626 vault token. The vault holds a "master vKAT" internally. The CompoundStrategy handles voting and reward reinvestment automatically. The exchange rate appreciates as rewards compound. Users can exit instantly by selling avKAT on SushiSwap (no cooldown, no protocol fee, subject to market slippage) or redeem through the vault (triggers standard 45-day cooldown).
+A liquid, transferable ERC-4626 vault token. The vault holds a "master vKAT" internally. The CompoundStrategy handles voting and reward reinvestment automatically. The exchange rate appreciates as rewards compound. Users can exit instantly by selling avKAT on SushiSwap (no cooldown, no protocol fee, subject to market slippage) or redeem through the vault (triggers the standard cooldown period).
 
 ## Contract Addresses (Mainnet)
 
@@ -57,11 +57,11 @@ KAT ──approve──→ avKATVault.deposit(amount, receiver) ──→ avKAT 
 
 vKAT ──approve NFT──→ avKATVault (deposit NFT) ──→ avKAT   (one-way, NFT consumed)
 
-vKAT ──beginWithdrawal──→ [45-day cooldown] ──withdraw──→ KAT (minus exit fee)
-vKAT ──beginWithdrawal + withdraw (same block)──→ KAT     (rage quit, 25% fee)
+vKAT ──beginWithdrawal──→ [cooldown period] ──withdraw──→ KAT (minus exit fee)
+vKAT ──beginWithdrawal + withdraw (same block)──→ KAT     (rage quit, max fee)
 
 avKAT ──sell on DEX──→ KAT                                 (instant, no protocol fee)
-avKAT ──vault.redeem──→ triggers standard 45-day cooldown ──→ KAT
+avKAT ──vault.redeem──→ triggers standard cooldown ──→ KAT
 avKAT ──vault.withdrawTokenId──→ vKAT (new NFT) ──→ then standard exit
 ```
 
@@ -69,38 +69,29 @@ avKAT ──vault.withdrawTokenId──→ vKAT (new NFT) ──→ then standar
 - **KAT → vKAT**: Call `approve(VotingEscrow, amount)` on KAT token, then `VotingEscrow.createLock(amount)`. Mints a non-transferable NFT.
 - **KAT → avKAT**: Call `approve(vault, amount)` on KAT token, then `avKATVault.deposit(amount, receiver)`. Returns vault shares at current exchange rate.
 - **vKAT → avKAT**: One-way. The NFT is consumed and merged into the vault's master position.
-- **vKAT → KAT**: Call `beginWithdrawal(tokenId)`, wait 45-day cooldown, call `withdraw(tokenId)`. Fee decays from 25% → 2.5%.
+- **vKAT → KAT**: Call `beginWithdrawal(tokenId)`, wait for cooldown, call `withdraw(tokenId)`. Fee decays from max → min (read live from ExitQueue contract).
 - **avKAT → KAT (instant)**: Sell avKAT on SushiSwap (see dex skill). No cooldown, no protocol fee, subject to slippage.
-- **avKAT → KAT (redeem)**: Call `vault.redeem(shares, receiver, owner)`. Triggers the standard 45-day cooldown.
+- **avKAT → KAT (redeem)**: Call `vault.redeem(shares, receiver, owner)`. Triggers the standard cooldown.
 
 ## Exit Fee Mechanics
 
-When unstaking vKAT, a fee is charged based on how long the user waits during the 45-day cooldown:
+When unstaking vKAT, a fee is charged based on how long the user waits during the cooldown period. The cooldown duration and fee bounds are **governed on-chain** via the ExitQueue contract and can change over time.
 
-| Wait time | Fee |
-|-----------|-----|
-| 0 days (rage quit) | 25% |
-| 15 days | ~16.7% |
-| 30 days | ~8.3% |
-| 45 days (full cooldown) | 2.5% |
+**ExitQueue contract:** `0x6dE9cAAb658C744aD337Ca5d92D084c97ffF578d`
 
-**Formula (after stabilization period):**
+**On-chain parameters (read via view functions):**
+- `cooldown()` — cooldown period in seconds
+- `feePercent()` — max exit fee in bps (rage quit fee)
+- `minFeePercent()` — min exit fee in bps (after full cooldown)
+
+**Formula:**
 ```
-feePercent = 25% - ((25% - 2.5%) × daysWaited / 45)
+fee = maxFee - ((maxFee - minFee) × timeWaited / cooldown)
 ```
 
-**Constants:** `MIN_FEE_BPS = 250` (2.5%), `MAX_FEE_BPS = 2500` (25%), `COOLDOWN = 3,888,000 seconds` (45 days).
+**Important:** Do not hardcode these values — always read them from the ExitQueue contract, as governance can update them. The MCP tools (`build_kat_begin_withdrawal`, `build_kat_withdraw`) include live `exitParams` in their responses.
 
 **Cancel withdrawal**: During cooldown, `cancelWithdrawalRequest(tokenId)` restores the staking position and voting power.
-
-### Stabilization period (Days 0–60 after TGE)
-
-Elevated fees during the early period:
-- Days 0–14: 80%
-- Days 15–30: 60%
-- Days 31–45: 45%
-- Days 46–60: 30%
-- Day 61+: Normal sliding scale (2.5%–25%)
 
 ## Gauge Voting
 
@@ -157,10 +148,17 @@ getAllGauges() → address[]
 getActiveGauges() → address[]
 ```
 
+### ExitQueue
+```
+cooldown() → uint256 seconds
+feePercent() → uint256 bps (max exit fee, rage quit)
+minFeePercent() → uint256 bps (min exit fee, after full cooldown)
+queue(uint256 tokenId) → (address holder, uint48 createdAt)
+canExit(uint256 tokenId) → bool
+```
+
 ### KAT Token
 ```
-unlockAndRenounceUnlocker()    // one-time, irreversible — called by UNLOCKER role
-locked() → bool                // true until unlock
 transfer(address to, uint256 amount)
 approve(address spender, uint256 amount)
 ```
@@ -182,7 +180,7 @@ approve(address spender, uint256 amount)
 
 ### Unstake vKAT → KAT
 1. Ensure votes are reset: call `GaugeVoter.reset(tokenId)` or use `resetVotesAndBeginWithdrawal(tokenId)`
-2. Call `VotingEscrow.beginWithdrawal(tokenId)` — starts 45-day cooldown
+2. Call `VotingEscrow.beginWithdrawal(tokenId)` — starts cooldown period
 3. Wait for cooldown to pass (fee decreases over time)
 4. Call `VotingEscrow.withdraw(tokenId)` — receive KAT minus exit fee
 
@@ -196,9 +194,9 @@ approve(address spender, uint256 amount)
 
 ## Common Mistakes
 
-- **KAT is now unlocked.** As of March 18, 2026, KAT is fully transferable. All transfers, staking to vKAT, and depositing to avKAT are enabled.
+- **KAT is fully transferable.** All transfers, staking to vKAT, and depositing to avKAT are enabled.
 - **Withdrawing without resetting votes.** A vKAT position with active gauge votes cannot begin withdrawal. Call `GaugeVoter.reset(tokenId)` first, or use the combined `resetVotesAndBeginWithdrawal(tokenId)`.
-- **Confusing vKAT and avKAT exit paths.** vKAT requires a 45-day cooldown with exit fee. avKAT can be sold instantly on DEX with no protocol fee. Users wanting immediate exit should use the avKAT → DEX path.
+- **Confusing vKAT and avKAT exit paths.** vKAT requires a cooldown period with exit fee (params read from ExitQueue contract). avKAT can be sold instantly on DEX with no protocol fee. Users wanting immediate exit should use the avKAT → DEX path.
 - **Expecting instant rewards.** Merkl rewards are computed offchain every ~2 hours and merkle roots are pushed onchain every ~8 hours. New stakers won't see rewards immediately.
 - **Approving the wrong contract.** Staking to vKAT requires approving VotingEscrow (`0x4d6f...3Ead`). Depositing to avKAT requires approving the vault (`0x7231...CeB`). Mixing these up will revert.
 
