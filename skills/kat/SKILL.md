@@ -141,12 +141,27 @@ convertToAssets(uint256 shares) → uint256 assets
 ```
 
 ### GaugeVoter
+
+**IMPORTANT:** Katana's GaugeVoter uses non-standard function names. Do NOT assume Solidly/Velodrome ABIs.
+
 ```
 vote(uint256 tokenId, (address gauge, uint256 weight)[])
 reset(uint256 tokenId)
 getAllGauges() → address[]
-getActiveGauges() → address[]
+gauges(address gauge) → bool              # check if gauge is active (NOT isAlive/isGauge)
+gaugeVotes(address gauge) → uint256       # votes for a gauge (NOT weights/votes)
+totalVotingPowerCast() → uint256          # total voting power (NOT totalWeight)
+isVoting(uint256 tokenId) → bool
+usedVotingPower(uint256 tokenId) → uint256
 ```
+
+**Functions that DO NOT exist on this contract** (will revert):
+- `weights(address)` — use `gaugeVotes(address)` instead
+- `totalWeight()` — use `totalVotingPowerCast()` instead
+- `isAlive(address)` — use `gauges(address)` instead
+- `isGauge(address)` — use `gauges(address)` instead
+- `getActiveGauges()` — use `getAllGauges()` + `gauges(addr)` filter
+- `poolForGauge(address)` — does not exist (see Gauge = Pool below)
 
 ### ExitQueue
 ```
@@ -192,6 +207,18 @@ approve(address spender, uint256 amount)
 1. Query Merkl API for unclaimed rewards: `https://api.merkl.xyz/v4/users/{address}?chainId=747474`
 2. Fetch proofs and call `claim()` on Merkl Distributor (see merkl skill for claiming workflow)
 
+## Gauge = Pool (Katana-specific)
+
+On Katana, gauge addresses **ARE** the pool addresses. There is no separate `poolForGauge()` mapping. To get pool info, call standard Uniswap V3 pool functions directly on the gauge address:
+
+| Function | Signature | Notes |
+|----------|-----------|-------|
+| Token 0 | `token0() → address` | Works on gauge address directly |
+| Token 1 | `token1() → address` | Works on gauge address directly |
+| Fee tier | `fee() → uint24` | 100=0.01%, 500=0.05%, 3000=0.3%, 10000=1% |
+
+**V2 vs V3 gauges:** Some gauges are V2 pools where `fee()` will revert. `token0()` and `token1()` still work. Handle gracefully and label as "V2".
+
 ## Common Mistakes
 
 - **KAT is fully transferable.** All transfers, staking to vKAT, and depositing to avKAT are enabled.
@@ -199,6 +226,10 @@ approve(address spender, uint256 amount)
 - **Confusing vKAT and avKAT exit paths.** vKAT requires a cooldown period with exit fee (params read from ExitQueue contract). avKAT can be sold instantly on DEX with no protocol fee. Users wanting immediate exit should use the avKAT → DEX path.
 - **Expecting instant rewards.** Merkl rewards are computed offchain every ~2 hours and merkle roots are pushed onchain every ~8 hours. New stakers won't see rewards immediately.
 - **Approving the wrong contract.** Staking to vKAT requires approving VotingEscrow (`0x4d6f...3Ead`). Depositing to avKAT requires approving the vault (`0x7231...CeB`). Mixing these up will revert.
+- **Assuming Solidly/Velodrome ABI.** Katana's GaugeVoter uses non-standard function names. `weights()`, `totalWeight()`, `isAlive()`, `isGauge()`, `getActiveGauges()`, and `poolForGauge()` do NOT exist. See the GaugeVoter section above for correct names.
+- **Looking up gauge pools separately.** Gauge addresses ARE pool addresses on Katana. Call `token0()`, `token1()`, `fee()` directly on the gauge address.
+- **Relying on the block explorer.** `explorer.katana.network` sits behind Cloudflare and may return 403/1000 errors. Don't rely on it for ABI lookups — use this reference instead.
+- **Calling `fee()` on V2 gauges.** Some gauges are V2 pools where `fee()` reverts. Handle gracefully.
 
 ## Cross-References
 
