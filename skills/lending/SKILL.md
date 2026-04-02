@@ -161,6 +161,61 @@ supplyCollateral(
 
 **Requires approval** for the collateral token to Morpho Core.
 
+### Vault Detail & Risk Inspection
+
+MetaMorpho vaults allocate across multiple Morpho Blue markets. To understand a vault's composition and withdrawal risk, read these on-chain:
+
+```
+withdrawQueueLength() → uint256
+withdrawQueue(uint256 index) → bytes32 marketId
+supplyQueueLength() → uint256
+supplyQueue(uint256 index) → bytes32 marketId
+config(bytes32 id) → (uint184 cap, bool enabled, uint64 removableAt)
+totalAssets() → uint256
+fee() → uint256
+curator() → address
+timelock() → uint256
+guardian() → address
+```
+
+For each market in the withdraw queue, read its `position()` on Morpho Core (with the vault address as user) and `market()` state to calculate:
+- **Vault supply per market**: convert the vault's supply shares to assets
+- **Market utilization**: `totalBorrow / totalSupply`
+- **Vault withdrawable per market**: `min(vaultSupplyAssets, marketLiquidity)` where `marketLiquidity = totalSupply - totalBorrow`
+- **Aggregate withdrawal liquidity**: sum of per-market withdrawable amounts vs vault TVL
+
+#### Morpho Blue GraphQL API (alternative data source)
+
+The Morpho Blue GraphQL API provides pre-aggregated vault data including APY, allocation breakdowns, and utilization — useful when you need rich analytics without multiple RPC calls:
+
+```
+Endpoint: https://blue-api.morpho.org/graphql
+```
+
+Example query:
+```graphql
+query VaultDetail($address: String!, $chainId: Int!) {
+  vaultByAddress(address: $address, chainId: $chainId) {
+    name, symbol
+    asset { address, symbol, decimals }
+    state {
+      totalAssets, fee, apy, netApy, curator
+      allocation {
+        market {
+          marketId, lltv
+          loanAsset { symbol }
+          collateralAsset { symbol }
+          state { supplyAssets, borrowAssets, liquidityAssets, utilization }
+        }
+        supplyAssets, supplyCap
+      }
+    }
+  }
+}
+```
+
+Use `chainId: 747474` for Katana mainnet. Falls back gracefully — if the API is unavailable, use the on-chain reads above.
+
 ### Vault Deposits (ERC-4626)
 
 Standard ERC-4626 interface on vault addresses:
@@ -172,6 +227,30 @@ convertToAssets(uint256 shares) → uint256
 ```
 
 **Requires approval** for the underlying asset to the vault address.
+
+### Vault Withdrawals (ERC-4626)
+
+Two modes for exiting a vault position:
+
+```
+withdraw(uint256 assets, address receiver, address owner) → uint256 shares
+```
+Specify the exact asset amount to receive. The vault burns the proportional shares.
+
+```
+redeem(uint256 shares, address receiver, address owner) → uint256 assets
+```
+Specify shares to burn. Receive the proportional asset amount.
+
+Use preview and max functions before building the transaction:
+```
+previewWithdraw(uint256 assets) → uint256 shares   // how many shares will be burned
+previewRedeem(uint256 shares) → uint256 assets      // how many assets will be received
+maxWithdraw(address owner) → uint256                 // max assets withdrawable by owner
+maxRedeem(address owner) → uint256                   // max shares redeemable by owner
+```
+
+**Withdrawals may partially fail** if underlying markets have high utilization locking liquidity. Always check `maxWithdraw()` or `maxRedeem()` first, and inspect per-market liquidity via the vault detail reads above.
 
 ### Authorization for Bundler3
 
@@ -217,8 +296,18 @@ The multicall encodes a sequence of actions via GeneralAdapter1:
 
 ### Passive Vault Deposit
 1. Scan factory events to find vaults — check `totalAssets()` and `name()` for best options
-2. Call `approve()` for the underlying asset → vault address
-3. Call `deposit()` on the vault (returns preview of shares received)
+2. Inspect vault allocations — read `withdrawQueue` + per-market positions to understand risk exposure and withdrawal liquidity (or query the Morpho Blue GraphQL API)
+3. Call `approve()` for the underlying asset → vault address
+4. Call `deposit()` on the vault (returns preview of shares received)
+
+### Vault Withdrawal
+1. Check withdrawal liquidity — read per-market positions and utilization. If `maxWithdraw()` is less than desired amount, some markets have high utilization locking funds.
+2. Call `withdraw(assets, receiver, owner)` to withdraw a specific asset amount, or `redeem(shares, receiver, owner)` to burn a specific share amount.
+
+### Vault Risk Analysis
+1. Read vault allocations — inspect per-market supply, caps, and utilization to understand concentration risk
+2. Check DEX exit liquidity — for each collateral token in the vault's markets, check if there's a SushiSwap pool with sufficient depth (see dex skill). If a collateral token has no pool or thin liquidity, liquidations may be difficult, increasing vault risk.
+3. Estimate liquidation slippage — use QuoterV2 (see dex skill) to simulate liquidation-sized trades for each collateral token. High slippage = higher risk for the vault's markets.
 
 ### Leverage Loop (5 Steps)
 1. Discover markets — find a suitable market (good LLTV, sufficient liquidity)
@@ -246,6 +335,15 @@ The multicall encodes a sequence of actions via GeneralAdapter1:
 - **Authorization is separate from approval.** `setAuthorization` grants GeneralAdapter1 permission to act in Morpho on the user's behalf. `approve()` grants ERC20 token spending. Both are needed for loops.
 - **First market discovery scan may be slow** — it scans events from genesis. Cache results when possible.
 
+## Data Sources
+
+The lending skill uses two complementary data sources:
+
+1. **Morpho Blue GraphQL API** (`https://blue-api.morpho.org/graphql`) — Pre-aggregated vault data including APY, allocations, and utilization breakdowns. Best for vault analytics and dashboards.
+2. **Katana RPC** (`https://rpc.katana.network/`) — Direct on-chain reads via `eth_call`. Authoritative for market data, positions, and transaction building. Use as fallback when the GraphQL API is unavailable.
+
+The SushiSwap DEX contracts (see dex skill) provide additional on-chain data for swap quotes, pool discovery, and liquidity analysis — essential for assessing collateral exit liquidity and liquidation risk.
+
 ## Common Mistakes
 
 - **Confusing market IDs with token symbols.** Market-specific functions require a `marketId` (bytes32 hex, exactly 66 characters: `0x` + 64 hex). To find the right market ID, scan `CreateMarket` events and match by loan/collateral token pair and LLTV.
@@ -255,6 +353,6 @@ The multicall encodes a sequence of actions via GeneralAdapter1:
 ## Cross-References
 
 - **wallet-manager**: `approve()` patterns for Morpho Core or Bundler3 approvals, balance checks
-- **dex**: SushiSwap V3 provides the swap leg inside leverage loops; use QuoterV2 to preview swap rates
+- **dex**: SushiSwap V3 provides the swap leg inside leverage loops. Use QuoterV2 to preview swap rates. Use pool reads to check DEX exit liquidity for vault collateral tokens — essential for assessing liquidation risk.
 - **merkl**: check reward incentives on Morpho markets/vaults before entering positions
 - **analytics**: on-chain price derivation for USD position values, gas cost estimates for complex transactions
