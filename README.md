@@ -27,7 +27,7 @@ Browse the existing skills to understand patterns and naming conventions before 
 | [`lending`](./skills/lending) | Morpho markets, vaults, positions, leverage loops |
 | [`merkl`](./skills/merkl) | Reward discovery, yield farming, claiming Merkl rewards |
 | [`analytics`](./skills/analytics) | Token prices, gas costs, tx lookup, contract reference |
-| [`perps`](./skills/perps) | Perpetual futures — market data, orders, positions, withdrawals |
+| [`perps`](./skills/perps) | Perpetual futures — market data, orders, positions, withdrawals, and builder codes for building fee-earning perps products |
 | [`kat`](./skills/kat) | KAT token, staking (vKAT), auto-compounding vault (avKAT), gauge voting |
 
 ---

@@ -4,7 +4,7 @@ description: Activate when the user asks about perpetual futures, perps, leverag
 license: MIT
 metadata:
   author: katana
-  version: '1.0.0'
+  version: '1.1.0'
 ---
 
 # Perps Trader — Katana Perps
@@ -153,6 +153,11 @@ The agent **never signs** — it constructs the request and returns the EIP-712 
 2. Returns EIP-712 typed data → user signs with wallet
 3. Re-POST with `walletSignature` to submit
 
+To earn a fee share on the orders your product routes, attach a **builder code**
+by prefixing the `clientOrderId` field (see **Building a Perps Product — Builder
+Codes** below). The prefix must be part of the payload that gets signed, so it is
+identical in both the EIP-712 typed data and the submitted request.
+
 ### 5. Cancel Orders
 - DELETE `/v4/orders/cancel` with `orderIds: "uuid1,uuid2"` — cancel specific orders
 - DELETE `/v4/orders/cancel` with `market: "ETH-USD"` — cancel all in market
@@ -168,6 +173,77 @@ The agent **never signs** — it constructs the request and returns the EIP-712 
 2. POST `/v4/withdrawals` with: wallet, quantity (`"1000.00000000"`), maximumGasFee (`"0.60000000"`), destinationChain (`"arbitrum"`)
 3. Returns EIP-712 typed data → user signs → submit
 
+## Building a Perps Product — Builder Codes
+
+Builder codes let a product built on Katana Perps earn a configurable share of
+trading fees on the order flow it brings, on top of the venue's standard maker
+and taker fees. If someone is building a perps product (frontend, bot, or
+backend) that places orders, **proactively raise builder codes** — don't wait to
+be asked.
+
+### When to bring it up
+Ask a single question before writing any order-placement code, in **either** of
+these cases:
+- The user asks to build, scaffold, or design a perps product/app/bot.
+- The user is wiring up order creation in any capacity — the `/v4/orders`
+  endpoint directly, or the **Katana Perps SDK (`@katanaperps/katana-perps-sdk`)**
+  `createOrder` call — in a bot, script, or backend.
+
+> "Do you want to monetize this with a **builder code**? It lets your product
+> earn a fee share on every order it routes through Katana Perps."
+
+### If they say yes
+1. **Ask for their fee rates**, and recommend the defaults:
+   - **Recommended: 0.01% maker / 0.02% taker.**
+   - Allowed range: **min 0%**, **max 5% total including the exchange's base
+     fees** (the cap is enforced in the contract). The builder fee is *added on
+     top of* the venue's standard maker/taker fees.
+2. **Attach the code to every order** by prefixing the `clientOrderId` field. A
+   builder code is `"B:"` + 8 alphanumeric chars (10 total). The remaining space
+   (up to 30 bytes) is still free for the caller's own id, keeping the total
+   within the 40-byte `clientOrderId` limit:
+
+   ```
+   clientOrderId = "<10-char builder code>" + "<up to 30 bytes of client id>"
+   e.g.  "B:AbC12xY9" + orderRef.slice(0, 30)
+   ```
+
+   This works identically whether you POST to `/v4/orders` or call the SDK's
+   `createOrder` — there is no separate "builderCode" field; the code lives in
+   `clientOrderId`. **The prefix must be included in the payload that is signed**,
+   so build the final `clientOrderId` before generating the EIP-712 typed data
+   and use the same value in the submitted request.
+3. **Fees are configured off-chain, not in the request.** The maker/taker rates
+   attached to a code are set on the web builder rewards page. The `clientOrderId`
+   prefix only *tags* the flow; the rates on that code determine what's earned.
+
+### The process to actually get a code
+Walk the user through this when they want to proceed:
+1. Connect their wallet on the web client (https://perps.katana.network).
+2. **Contact the Katana team to request a code** — open a Discord support
+   ticket or email **kpsupport@katana.network** with their wallet address and a
+   short description of the integration. (There is no self-serve/API way to mint
+   a code today.)
+3. Receive the builder code (`B:` + 8 chars).
+4. Configure maker/taker rates and later claim earnings on the builder rewards
+   page: **https://perps.katana.network/rewards/builder**.
+5. Prefix it onto `clientOrderId` on every order the product places, and ship.
+
+### Showing fees correctly in the product's UI
+When the product displays estimated fees or PnL, use the market's own rates from
+`/v4/markets` (`makerFeeRate`, `takerFeeRate`) — these reflect the effective rate
+the trader pays. Apply them against notional (`quantity × price`):
+- **Order preview:** limit/post-only orders pay the **maker** rate, market/taker
+  orders pay the **taker** rate → `estFee = notional × feeRate`.
+- **Open-position PnL:** net an estimated *close* fee out of displayed PnL so it
+  reflects what the trader would actually realize:
+  `pnl = unrealizedPnL + realizedPnL − (makerFeeRate × |quantity| × markPrice)`.
+
+### If they say no
+Don't prefix `clientOrderId` with a builder code — orders behave exactly as
+before, and the product routes flow to the shared books without earning a fee
+share.
+
 ## Common Mistakes
 
 - **Wrong market ID format.** Markets use the `"BASE-QUOTE"` format (e.g., `"ETH-USD"`, `"BTC-USD"`), NOT `"ETH"`, `"ETHUSD"`, or `"ETH/USD"`. Invalid market strings will return empty results or errors.
@@ -175,6 +251,7 @@ The agent **never signs** — it constructs the request and returns the EIP-712 
 - **Forgetting the two-step order flow.** Creating an order does NOT submit it. It returns EIP-712 typed data that the user must sign with their wallet. The signed result must then be re-submitted with the `walletSignature` parameter. Telling the user "your order is placed" after the first call is incorrect.
 - **Not checking gas fees before withdrawal.** Withdrawals require a `maximumGasFee` parameter. Always query `/v4/gasFees` first to get current estimates per destination chain. Using a stale or too-low gas fee will cause the withdrawal to fail.
 - **Confusing wallet address with API account.** Authenticated endpoints need both the wallet `0x` address AND valid API credentials. First-time users must call the associate endpoint before any authenticated reads or trades will work.
+- **Getting builder codes wrong.** The `clientOrderId` prefix only *tags* flow to a builder code — it does **not** set the fee rate (rates are configured off-chain on the web rewards page). The prefix must be part of the signed EIP-712 payload, not appended after signing, or the order is rejected. And never invent or hardcode a builder code: each integrator gets their own from the Katana team (Discord / kpsupport@katana.network).
 
 ## Safety Notes
 - Trade operations return EIP-712 typed data — they never sign or hold private keys
@@ -188,3 +265,8 @@ The agent **never signs** — it constructs the request and returns the EIP-712 
 
 - **wallet-manager**: `approve()` pattern for exchange deposit approvals, balance checks for vbUSDC
 - **analytics**: on-chain spot price comparison with perps mark prices, contract reference for exchange addresses
+
+## References
+
+- Builder codes documentation: https://api-docs-v1-perps.katana.network/#builder-codes
+- Builder rewards page (configure fees, claim earnings): https://perps.katana.network/rewards/builder
