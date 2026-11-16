@@ -1,19 +1,19 @@
 ---
 name: dex
-description: Activate when the user wants to swap tokens, get trade quotes, check pool liquidity, or provide liquidity on SushiSwap on Katana Network.
+description: Activate when the user wants to swap tokens, get trade quotes, check pool liquidity, or provide liquidity on Katana Swap (built on Sushi / SushiSwap) on Katana Network.
 license: MIT
 metadata:
   author: katana
   version: '1.0.0'
 ---
 
-# DEX — SushiSwap on Katana
+# DEX — Katana Swap (built on Sushi)
 
-Token swaps, trade quoting, pool analysis, and liquidity provision on SushiSwap (V3 + V2) on Katana Network.
+Token swaps, trade quoting, pool analysis, and liquidity provision on Katana Swap (V3 + V2) on Katana Network. Katana Swap is Katana's DEX, built on Sushi's deployment on Katana — the contracts are Sushi contracts, so "Sushi", "SushiSwap" and "Katana Swap" all refer to the same venue.
 
-## SushiSwap Overview
+## Katana Swap Overview
 
-SushiSwap on Katana offers both concentrated liquidity (V3) and full-range (V2) pools. V3 is generally preferred for better capital efficiency and tighter spreads.
+Katana Swap offers both concentrated liquidity (V3) and full-range (V2) pools. V3 is generally preferred for better capital efficiency and tighter spreads.
 
 ### V3 Fee Tiers
 
@@ -198,7 +198,7 @@ Always show the user: expected output amount, minimum output (after slippage), a
 
 ## Data Sources
 
-SushiSwap tools interact directly with on-chain contracts via Katana RPC:
+Katana Swap reads interact directly with on-chain contracts via Katana RPC:
 
 - **V3 QuoterV2** — simulates swaps across all fee tiers for accurate quotes with price impact
 - **V3 Factory** — discovers pools for token pairs, checks pool existence and liquidity
@@ -212,4 +212,4 @@ These on-chain reads provide real-time DEX data. Use pool reads to check exit li
 - **wallet-manager**: `approve()` patterns for router approvals, balance checks before swaps
 - **analytics**: on-chain price derivation to show USD values, gas cost estimates
 - **merkl**: check if a pool has reward incentives before adding LP
-- **lending**: SushiSwap provides the swap leg inside Morpho leverage loops
+- **lending**: Katana Swap provides the swap leg inside Morpho leverage loops

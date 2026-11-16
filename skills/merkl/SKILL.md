@@ -13,9 +13,9 @@ Discover incentivized DeFi opportunities and claim reward tokens distributed by 
 
 ## How Merkl Works
 
-Merkl distributes extra reward tokens (KAT, MORPHO, SUSHI, etc.) to users who participate in DeFi on Katana — supplying to Morpho, providing Sushi LP, borrowing, or holding tokens.
+Merkl distributes extra reward tokens (KAT, MORPHO, SUSHI, etc.) to users who participate in DeFi on Katana — supplying to Morpho, providing Katana Swap (Sushi) LP, borrowing, or holding tokens.
 
-- **Campaigns** target specific actions: POOL (Sushi LP), LEND (Morpho supply/vaults), BORROW (Morpho borrow), HOLD (token holding), DROP (airdrops)
+- **Campaigns** target specific actions: POOL (Katana Swap / Sushi LP), LEND (Morpho supply/vaults), BORROW (Morpho borrow), HOLD (token holding), DROP (airdrops)
 - Rewards are computed **offchain every ~2 hours** based on user activity snapshots
 - Merkle roots are pushed **onchain every ~8 hours** — only then can users claim
 - Claiming submits a merkle proof to the Distributor contract
@@ -73,7 +73,7 @@ The response includes the exact `users`, `tokens`, `amounts`, and `proofs` array
 
 ### Discover Best Yield
 1. Query `https://api.merkl.xyz/v4/opportunities?chainId=747474` — see all incentivized positions with reward APRs
-2. Compare with native yield from Morpho markets (see lending skill) or Sushi pools (see dex skill) — **total yield = native APY + Merkl reward APR**
+2. Compare with native yield from Morpho markets (see lending skill) or Katana Swap pools (see dex skill) — **total yield = native APY + Merkl reward APR**
 3. Use dex or lending skills to enter the position
 
 ### Check and Claim Rewards
@@ -94,7 +94,7 @@ The response includes the exact `users`, `tokens`, `amounts`, and `proofs` array
 - **Proof availability:** Merkle roots update every ~8 hours. The API may show unclaimed amounts before proofs are available onchain. Check the `claimable` field before constructing a claim.
 - **Dispute period:** After a merkle root update, there's a dispute window before rewards become claimable.
 - **Stale proofs:** Proofs are fetched at claim-construction time. If the user waits too long to submit, a new merkle root may invalidate the proofs. Claiming promptly reduces this risk.
-- **Reward token liquidity:** Some reward tokens may not have deep on-chain liquidity. Check prices via Sushi V3 pools (see analytics skill) before assuming rewards can be easily sold.
+- **Reward token liquidity:** Some reward tokens may not have deep on-chain liquidity. Check prices via Katana Swap (Sushi V3) pools (see analytics skill) before assuming rewards can be easily sold.
 
 ## Common Mistakes
 
@@ -105,6 +105,6 @@ The response includes the exact `users`, `tokens`, `amounts`, and `proofs` array
 ## Cross-References
 
 - **lending**: supply to Morpho markets/vaults to earn LEND rewards
-- **dex**: provide Sushi LP to earn POOL rewards
+- **dex**: provide Katana Swap LP to earn POOL rewards (KAT LP incentives are allocated by the Katana Foundation since the November 17, 2026 gauge-voting sunset)
 - **analytics**: on-chain price derivation to value reward tokens in USD
 - **wallet-manager**: balance checks after claiming to verify reward tokens received

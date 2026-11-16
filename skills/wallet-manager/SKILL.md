@@ -16,7 +16,7 @@ Core wallet operations: check balances, transfer tokens, wrap/unwrap ETH, and ma
 - Mainnet chain ID: **747474** / Testnet (Bokuto): **737373**
 - Gas token: ETH
 - WETH on Katana is **vbETH** (Vault Bridge ETH) — a yield-generating token that implements the WETH9 interface. Wrapping ETH earns bridge yield automatically.
-- RPC: `https://rpc.katana.network/` (mainnet) / `https://rpc-bokuto.katanarpc.com` (testnet)
+- RPC: `https://rpc.katana.network/` (mainnet, backup `https://rpc.katanarpc.com/`) / `https://rpc-bokuto.katanarpc.com` (testnet). The public endpoints are free and rate-limited: retry 429s with backoff, fall back to the backup URL, and for heavy workloads (many quotes, full event scans, bots) the user needs their own RPC provider.
 
 ## Transaction Model
 
@@ -102,9 +102,9 @@ Call `approve(address spender, uint256 amount)` on the token contract.
 
 | Protocol | Contract | Address |
 |----------|----------|---------|
-| Sushi V3 | SwapRouter | `0x4e1d81A3E627b9294532e990109e4c21d217376C` |
-| Sushi V3 | PositionManager | `0x2659C6085D26144117D904C46B48B6d180393d27` |
-| Sushi V2 | Router | `0x69cC349932ae18ED406eeB917d79b9b3033fB68E` |
+| Katana Swap (Sushi V3) | SwapRouter | `0x4e1d81A3E627b9294532e990109e4c21d217376C` |
+| Katana Swap (Sushi V3) | PositionManager | `0x2659C6085D26144117D904C46B48B6d180393d27` |
+| Katana Swap (Sushi V2) | Router | `0x69cC349932ae18ED406eeB917d79b9b3033fB68E` |
 | Morpho | Core | `0xD50F2DffFd62f94Ee4AEd9ca05C61d0753268aBc` |
 | Morpho | Bundler3 | `0xA8C5e23C9C0DF2b6fF716486c6bBEBB6661548C8` |
 | KAT | VotingEscrow | `0x4d6fC15Ca6258b168225D283262743C623c13Ead` |
