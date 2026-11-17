@@ -16,7 +16,7 @@ Read-only on-chain queries for market data, gas estimation, transaction debuggin
 - Mainnet chain ID: **747474** / Testnet (Bokuto): **737373**
 - Gas token: ETH
 - 1-second block times, EIP-1559 gas pricing
-- RPC: `https://rpc.katana.network/` (mainnet) / `https://rpc-bokuto.katanarpc.com` (testnet)
+- RPC: `https://rpc.katana.network/` (mainnet, backup `https://rpc.katanarpc.com/`) / `https://rpc-bokuto.katanarpc.com` (testnet). The public endpoints are free and rate-limited: retry 429s with backoff, fall back to the backup URL, and for heavy workloads (many quotes, full event scans, bots) the user needs their own RPC provider.
 - Explorer: katanascan.com (mainnet), bokuto.katanascan.com (testnet)
 
 ## Known Tokens
@@ -52,7 +52,7 @@ Decimals: USDC/USDT/AUSD = 6, WBTC/LBTC/BTCK = 8, all others = 18. Stablecoins (
 
 ### Token Prices
 
-Derive USD spot prices from Sushi V3 pool state. For each token:
+Derive USD spot prices from Katana Swap (Sushi V3) pool state. For each token:
 
 1. Get pool address from V3 Factory (`0x203e8740894c8955cB8950759876d7E7E45E04c1`):
    ```
@@ -73,7 +73,7 @@ Derive USD spot prices from Sushi V3 pool state. For each token:
 
 4. **Routing:** Tokens without a direct stablecoin pool should route through WETH (e.g., KAT → WETH → USDC).
 
-**Note:** These are on-chain spot prices, not aggregated oracle prices. Thin pools may show significant deviation from CEX prices. If a token has no Sushi V3 pool, it returns no price — this does not mean the token is worthless.
+**Note:** These are on-chain spot prices, not aggregated oracle prices. Thin pools may show significant deviation from CEX prices. If a token has no Katana Swap (Sushi V3) pool, it returns no price — this does not mean the token is worthless.
 
 ### Gas Prices
 
@@ -113,7 +113,7 @@ On Katana with 1-second blocks, pending state is very brief.
 
 ## Contract Reference
 
-### Sushi DEX Contracts (Mainnet)
+### Katana Swap (Sushi) DEX Contracts (Mainnet)
 
 | Contract | Address |
 |----------|---------|
@@ -188,7 +188,7 @@ On Katana with 1-second blocks, pending state is very brief.
 
 | User request | Action |
 |---|---|
-| "What's the price of KAT?" | Read Sushi V3 pool `slot0()` for KAT/WETH then WETH/USDC |
+| "What's the price of KAT?" | Read Katana Swap (Sushi V3) pool `slot0()` for KAT/WETH then WETH/USDC |
 | "How much will gas cost?" | Call `eth_gasPrice` + multiply by gas estimate from table above |
 | "Did my transaction go through?" | Call `eth_getTransactionReceipt(txHash)` |
 | Show USD values for a portfolio | Derive prices from V3 pools then multiply by token balances |

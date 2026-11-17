@@ -1,175 +1,181 @@
 ---
 name: kat
-description: Activate when the user asks about the KAT token, staking KAT, vKAT locks, avKAT vault, gauge voting, exit fees, cooldown periods, or building applications that interact with the KAT token ecosystem on Katana Network.
+description: Activate when the user asks about the KAT token, staking KAT, the avKAT vault, avKAT rewards or KAT buybacks, unstaking or exiting avKAT, exit fees, the 7-day cooldown, converting vKAT to avKAT, legacy/sunset vKAT positions or gauge voting, or building applications that interact with the KAT token ecosystem on Katana Network.
 license: MIT
 metadata:
   author: katana
-  version: '1.0.0'
+  version: '2.0.0'
 ---
 
 # KAT Token — Katana Network
 
-The KAT token ecosystem on Katana Network, including staking (vKAT), auto-compounding vaults (avKAT), gauge voting, and exit mechanics.
+The KAT token ecosystem on Katana Network: staking KAT into avKAT, how avKAT earns from revenue-funded KAT buybacks, exiting through the cooldown, and converting legacy vKAT positions.
+
+> **vKAT staking, gauge voting and vote incentives were sunset on November 17, 2026.** avKAT is now the only way to stake KAT. Do not recommend creating new vKAT locks, voting on gauges, or claiming vote incentives. Existing vKAT holders should convert to avKAT (no deadline) or exit.
 
 ## KAT Token Overview
 
-KAT is the native ERC-20 token of the Katana Foundation, deployed on Katana Network (chain ID 747474). It has 18 decimals.
+KAT is the native ERC-20 token of Katana, deployed on Katana Network (chain ID 747474). 18 decimals, fixed supply of 10 billion. KAT has been fully transferable since March 18, 2026.
 
-**KAT is fully transferable.** All token flows — `transfer()`, `transferFrom()`, staking (KAT → vKAT), and vault deposits (KAT → avKAT) — are enabled.
+## The Two Token Types
 
-KAT itself has **no voting power**. Users must convert it into one of two staking derivatives to participate in governance and earn rewards.
+| Token | Standard | Transferable | Rewards |
+|-------|----------|-------------|---------|
+| **KAT** | ERC-20 | Yes | None |
+| **avKAT** | ERC-4626 vault shares | Yes (liquid, tradeable, usable in DeFi) | Auto-compounded every epoch from KAT buybacks — nothing to claim |
 
-## The Three Token Types
+**vKAT** (ERC-721 soulbound NFT in the VotingEscrow) still exists at the contract level, but it is **sunset** and **earns no rewards**. It now appears only as (a) legacy positions from before November 17, 2026, and (b) the temporary NFT created when unstaking avKAT through the vault.
 
-| Token | Standard | Transferable | Voting Power | Rewards |
-|-------|----------|-------------|-------------|---------|
-| **KAT** | ERC-20 | Yes | None | None |
-| **vKAT** | ERC-721 (non-transferable NFT) | No (non-transferable) | Yes — 1:1 with locked amount | Manual claim via Merkl |
-| **avKAT** | ERC-4626 vault shares | Yes (liquid, tradeable) | Delegated to CompoundStrategy | Auto-compounded |
+### How avKAT earns
 
-### vKAT (Active Staking)
-A non-transferable NFT representing a locked KAT position in the VotingEscrow contract. Each lock is a separate NFT with its own token ID. Users can hold multiple vKAT NFTs. Grants direct gauge voting power. Exiting requires a cooldown period with a sliding exit fee — parameters are read live from the on-chain ExitQueue contract and may change over time.
+A share of the revenue from **Katana Swap** (built on Sushi), **Katana Perps**, **Vault Bridge**, and **sequencer fees** is used to buy KAT on the open market. **100% of that bought-back KAT is compounded into avKAT every epoch** via the CompoundStrategy.
 
-### avKAT (Passive Staking)
-A liquid, transferable ERC-4626 vault token. The vault holds a "master vKAT" internally. The CompoundStrategy handles voting and reward reinvestment automatically. The exchange rate appreciates as rewards compound. Users can exit instantly by selling avKAT on SushiSwap (no cooldown, no protocol fee, subject to market slippage) or redeem through the vault (triggers the standard cooldown period).
+- The avKAT balance stays the same; the amount of KAT each avKAT is redeemable for (`convertToAssets`) goes up.
+- The exchange rate is measured in KAT — it says nothing about the market price of KAT or avKAT.
+- Rewards depend on network usage (more trading, bridging and activity → more buybacks). They are variable and not guaranteed.
+- Buybacks currently follow a scheduled process; fully automated onchain buybacks are planned.
+- Rewards come from revenue-funded buybacks, **not** from token emissions, gauge voting, or vote incentives.
 
 ## Contract Addresses (Mainnet)
 
 | Contract | Address | Purpose |
 |----------|---------|---------|
 | KAT Token | `0x7F1f4b4b29f5058fA32CC7a97141b8D7e5ABDC2d` | ERC-20 token |
-| VotingEscrow | `0x4d6fC15Ca6258b168225D283262743C623c13Ead` | Lock KAT → mint vKAT NFT |
-| NFT Lock | `0x106F7D67Ea25Cb9eFf5064CF604ebf6259Ff296d` | ERC-721 contract for vKAT positions |
-| avKAT Vault | `0x7231dbaCdFc968E07656D12389AB20De82FbfCeB` | ERC-4626 auto-compounding vault |
-| GaugeVoter | `0x5e755A3C5dc81A79DE7a7cEF192FFA60964c9352` | Vote vKAT power on gauges |
-| CompoundStrategy | `0x60233D1c150F9C08D886906d597aA79a205b0463` | Auto-compounds avKAT vault rewards |
-| Exit Queue | `0x6dE9cAAb658C744aD337Ca5d92D084c97ffF578d` | Manages cooldown & exit fee calculation |
-| Curve | `0x38b8B74330b2F918C22F7936aCf773C6D963C73c` | Voting power decay & exit fee curve |
+| avKAT Vault | `0x7231dbaCdFc968E07656D12389AB20De82FbfCeB` | ERC-4626 staking vault |
+| VotingEscrow | `0x4d6fC15Ca6258b168225D283262743C623c13Ead` | Holds the vault's KAT; exits (begin/withdraw/cancel) go through it |
+| NFT Lock | `0x106F7D67Ea25Cb9eFf5064CF604ebf6259Ff296d` | ERC-721 contract for vKAT NFTs |
+| Exit Queue | `0x6dE9cAAb658C744aD337Ca5d92D084c97ffF578d` | Withdrawal queue, cooldown & exit fee |
+| CompoundStrategy | `0x60233D1c150F9C08D886906d597aA79a205b0463` | Compounds bought-back KAT into the vault |
 | Clock | `0x17049d374A2bcdA70F8939C21ad92bcF6B2A95ab` | Epoch timing |
-| Swapper | `0x92D2e00b6D2BB50B87a9BE971a82B1F00ac44768` | Swaps non-KAT rewards to KAT for compounding |
-| Merkl Distributor | `0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae` | Merkle-based reward claiming |
 
-## Token Conversion Flows
+Legacy (sunset) contracts — only relevant for old vKAT positions: GaugeVoter `0x5e755A3C5dc81A79DE7a7cEF192FFA60964c9352`, Curve `0x38b8B74330b2F918C22F7936aCf773C6D963C73c`, Swapper `0x92D2e00b6D2BB50B87a9BE971a82B1F00ac44768`.
+
+## Token Flows
 
 ```
-KAT ──approve──→ VotingEscrow.createLock(amount) ──→ vKAT (NFT)
-KAT ──approve──→ avKATVault.deposit(amount, receiver) ──→ avKAT (shares)
+KAT   ──approve vault──→ avKATVault.deposit(assets, receiver) ──→ avKAT
 
-vKAT ──approve NFT──→ avKATVault (deposit NFT) ──→ avKAT   (one-way, NFT consumed)
+avKAT ──avKATVault.withdrawTokenId(assets, receiver, owner)──→ new vKAT NFT
+      ──VotingEscrow.beginWithdrawal(tokenId)──→ [cooldown]
+      ──VotingEscrow.withdraw(tokenId)──→ KAT (no fee after full cooldown, up to 25% earlier)
 
-vKAT ──beginWithdrawal──→ [cooldown period] ──withdraw──→ KAT (minus exit fee)
-vKAT ──beginWithdrawal + withdraw (same block)──→ KAT     (rage quit, max fee)
+avKAT ──swap on a DEX (Katana Swap)──→ KAT   (instant, market rate, trading fees + slippage)
 
-avKAT ──sell on DEX──→ KAT                                 (instant, no protocol fee)
-avKAT ──vault.redeem──→ triggers standard cooldown ──→ KAT
-avKAT ──vault.withdrawTokenId──→ vKAT (new NFT) ──→ then standard exit
+legacy vKAT ──approve NFT to vault──→ avKATVault.depositTokenId(tokenId, receiver) ──→ avKAT
+legacy vKAT ──beginWithdrawal → wait → withdraw──→ KAT
 ```
 
-### Key conversion details:
-- **KAT → vKAT**: Call `approve(VotingEscrow, amount)` on KAT token, then `VotingEscrow.createLock(amount)`. Mints a non-transferable NFT.
-- **KAT → avKAT**: Call `approve(vault, amount)` on KAT token, then `avKATVault.deposit(amount, receiver)`. Returns vault shares at current exchange rate.
-- **vKAT → avKAT**: One-way. The NFT is consumed and merged into the vault's master position.
-- **vKAT → KAT**: Call `beginWithdrawal(tokenId)`, wait for cooldown, call `withdraw(tokenId)`. Fee decays from max → min (read live from ExitQueue contract).
-- **avKAT → KAT (instant)**: Sell avKAT on SushiSwap (see dex skill). No cooldown, no protocol fee, subject to slippage.
-- **avKAT → KAT (redeem)**: Call `vault.redeem(shares, receiver, owner)`. Triggers the standard cooldown.
+## Exit Fee Schedule
 
-## Exit Fee Mechanics
+The new schedule (from the November 2026 tokenomics update) is a **7-day cooldown** with a fee that starts at **25%** and decreases linearly to **0%**.
 
-When unstaking vKAT, a fee is charged based on how long the user waits during the cooldown period. The cooldown duration and fee bounds are **governed on-chain** via the ExitQueue contract and can change over time.
+| Time left in cooldown | Fee | 1,000 KAT → receive |
+|---|---|---|
+| 7 days (instant exit) | 25% | 750 KAT |
+| 6 days | 21% | 790 KAT |
+| 5 days | 18% | 820 KAT |
+| 4 days | 14% | 860 KAT |
+| 3 days | 11% | 890 KAT |
+| 2 days | 7% | 930 KAT |
+| 1 day | 4% | 960 KAT |
+| Cooldown complete | 0% | 1,000 KAT |
 
-**ExitQueue contract:** `0x6dE9cAAb658C744aD337Ca5d92D084c97ffF578d`
-
-**On-chain parameters (read via view functions):**
-- `cooldown()` — cooldown period in seconds
-- `feePercent()` — max exit fee in bps (rage quit fee)
-- `minFeePercent()` — min exit fee in bps (after full cooldown)
-
-**Formula:**
 ```
-fee = maxFee - ((maxFee - minFee) × timeWaited / cooldown)
+feeBps   = MAX_FEE_BPS - (MAX_FEE_BPS - MIN_FEE_BPS) × elapsed / COOLDOWN   (elapsed clamped to COOLDOWN)
+MAX_FEE_BPS = 2500   MIN_FEE_BPS = 0   COOLDOWN = 604800 s (7 days)   BPS_DENOMINATOR = 10000
 ```
 
-**Important:** Do not hardcode these values — always read them from the ExitQueue contract, as governance can update them. The MCP tools (`build_kat_begin_withdrawal`, `build_kat_withdraw`) include live `exitParams` in their responses.
+**The on-chain ExitQueue is the source of truth — never hardcode the table above.**
 
-**Cancel withdrawal**: During cooldown, `cancelWithdrawalRequest(tokenId)` restores the staking position and voting power.
+- **Current parameters** for new exits: `cooldown()` (seconds), `feePercent()` (max, bps), `minFeePercent()` (min, bps). Read them before quoting a fee or cooldown. If they differ from the schedule above (for example around the November 2026 transition), tell the user and use the live values with the same linear formula.
+- **Each exit locks its terms when it starts.** `queue(tokenId)` stores the cooldown and fee parameters in effect at `beginWithdrawal` time. An exit started under older terms (e.g. a 60-day cooldown with a 2.5% minimum fee) keeps them; it is not moved onto the new schedule.
+- **Exact fee for a queued exit:** `calculateFee(tokenId)` returns the fee in KAT (wei) if withdrawn now. `canExit(tokenId)` says whether it can be withdrawn.
 
-## Gauge Voting
+**Cancel**: during the cooldown, `VotingEscrow.cancelWithdrawalRequest(tokenId)` stops the exit. This leaves the user holding a **vKAT NFT, which earns nothing** — deposit it back into the vault (`depositTokenId`) to resume earning.
 
-vKAT holders vote directly on gauges to direct KAT emission incentives to liquidity pools.
+## Workflows
 
-- **Vote**: `GaugeVoter.vote(tokenId, [{gauge, weight}])` — weights in basis points (10,000 = 100%)
-- **Reset**: `GaugeVoter.reset(tokenId)` — clear all votes (required before withdrawing a vKAT position)
-- **Combined**: `VotingEscrow.resetVotesAndBeginWithdrawal(tokenId)` — atomic reset + begin withdrawal
-- Votes persist across epochs until changed or reset
-- avKAT holders do **not** vote directly — the CompoundStrategy votes automatically
+### Check KAT position
+1. `balanceOf(address)` on KAT and on the avKAT vault
+2. `VotingEscrow.ownedTokens(address)` — any vKAT NFTs (legacy positions or NFTs mid-exit); `locked(tokenId)` for each
+3. For avKAT → KAT value, `avKATVault.convertToAssets(shares)` (each avKAT is currently worth more than 1 KAT)
+4. KAT price: derive from the Katana Swap (Sushi V3) pool (see analytics skill)
 
-## vKAT Lock Management
+### Stake KAT → avKAT
+1. `approve(avKATVault, amount)` on the KAT token — spender is the avKAT Vault (`0x7231dbaCdFc968E07656D12389AB20De82FbfCeB`)
+2. `avKATVault.deposit(amount, receiver)` — returns avKAT shares
+3. Optionally preview with `previewDeposit(assets)` — the user receives fewer avKAT than KAT deposited because the exchange rate is above 1
 
-- **Merge**: `VotingEscrow.merge(fromTokenId, toTokenId)` — combine two locks into one. Burns the "from" lock.
-- **Split**: `VotingEscrow.split(tokenId, amount)` — create a new lock with a portion of KAT. Returns new token ID.
+### Unstake avKAT → KAT (cooldown)
+1. **Redeem to NFT:** `avKATVault.withdrawTokenId(assets, receiver, owner)`. **The first argument is the KAT (assets) amount, not avKAT shares** — compute it with `convertToAssets(shares)` / `previewRedeem(shares)`. This burns avKAT and mints a **new** vKAT NFT. Get the token ID from the tx logs or `ownedTokens(owner)`.
+   - **Minimum:** the KAT amount must be at least `VotingEscrow.minDeposit()` (230 KAT at time of writing). Smaller amounts revert with `AmountTooSmall()` — for small balances the only exit is a DEX swap.
+2. `VotingEscrow.beginWithdrawal(tokenId)` — starts the cooldown and locks the exit terms
+3. Wait. Track it with `ExitQueue.queue(tokenId)`, `canExit(tokenId)` and `calculateFee(tokenId)`
+4. `VotingEscrow.withdraw(tokenId)` — receive KAT minus the fee at that moment (none after the full cooldown under the new schedule)
 
-## Reward Distribution
+For an **instant exit through the vault** (maximum fee), do steps 2 and 4 back to back. Always tell the user the fee in KAT (`calculateFee`) before they choose this.
 
-Rewards come from three sources:
-1. **KAT emission schedule** — protocol inflation
-2. **Pool trading fees** — from Sushi DEX
-3. **Exit fees** — from users who unstake
+### Exit avKAT instantly via DEX
+1. Quote avKAT → KAT on Katana Swap (see dex skill) — check output and price impact
+2. Compare against `convertToAssets(shares)`: if the DEX output is well below the redeemable KAT, the cooldown is likely better
+3. Approve the router for avKAT, then swap
 
-Distribution uses Merkle tree proofs via the Merkl Distributor. vKAT holders claim manually; avKAT holders get automatic compounding via the CompoundStrategy.
+### Convert legacy vKAT → avKAT
+1. `VotingEscrow.ownedTokens(address)` and `locked(tokenId)` — list the user's vKAT NFTs and locked amounts
+2. Approve the vault for the NFT on the NFT Lock (`0x106F7D67Ea25Cb9eFf5064CF604ebf6259Ff296d`): `approve(vault, tokenId)` or `setApprovalForAll(vault, true)`
+3. `avKATVault.depositTokenId(tokenId, receiver)` — one-way; the NFT is consumed
+4. No deadline. Warn the user they will receive **fewer avKAT than the KAT in the lock** (because 1 avKAT > 1 KAT); the avKAT is backed by the same amount of KAT
 
-To check unclaimed rewards, query the Merkl API: `https://api.merkl.xyz/v4/users/{address}?chainId=747474` (see merkl skill for claiming workflow).
+### Exit legacy vKAT → KAT
+1. `VotingEscrow.isVoting(tokenId)` — check for pre-sunset gauge votes
+2. If voting, use `VotingEscrow.resetVotesAndBeginWithdrawal(tokenId)` (atomic), or `GaugeVoter.reset(tokenId)` then `beginWithdrawal(tokenId)`
+3. Wait out the cooldown, then `VotingEscrow.withdraw(tokenId)`
+
+### Legacy vote incentives
+Vote incentives ended on November 17, 2026. If a user has unclaimed pre-sunset Merkl rewards, they can still claim them (see merkl skill). avKAT has nothing to claim.
 
 ## Key Function Signatures
-
-### VotingEscrow (vKAT)
-```
-createLock(uint256 amount) → uint256 tokenId
-beginWithdrawal(uint256 tokenId)
-withdraw(uint256 tokenId)
-cancelWithdrawalRequest(uint256 tokenId)
-resetVotesAndBeginWithdrawal(uint256 tokenId)
-merge(uint256 fromTokenId, uint256 toTokenId)
-split(uint256 tokenId, uint256 amount) → uint256 newTokenId
-```
 
 ### avKAT Vault (ERC-4626)
 ```
 deposit(uint256 assets, address receiver) → uint256 shares
-redeem(uint256 shares, address receiver, address owner) → uint256 assets
+depositTokenId(uint256 tokenId, address receiver) → uint256 shares     // vKAT → avKAT
+withdrawTokenId(uint256 assets, address receiver, address owner) → uint256 tokenId   // avKAT → new vKAT NFT; assets = KAT amount, ≥ VotingEscrow.minDeposit()
+previewDeposit(uint256 assets) → uint256 shares
+previewRedeem(uint256 shares) → uint256 assets
 convertToShares(uint256 assets) → uint256 shares
 convertToAssets(uint256 shares) → uint256 assets
+totalAssets() → uint256
+balanceOf(address) → uint256
 ```
 
-### GaugeVoter
-
-**IMPORTANT:** Katana's GaugeVoter uses non-standard function names. Do NOT assume Solidly/Velodrome ABIs.
-
+### VotingEscrow
 ```
-vote(uint256 tokenId, (address gauge, uint256 weight)[])
-reset(uint256 tokenId)
-getAllGauges() → address[]
-gauges(address gauge) → bool              # check if gauge is active (NOT isAlive/isGauge)
-gaugeVotes(address gauge) → uint256       # votes for a gauge (NOT weights/votes)
-totalVotingPowerCast() → uint256          # total voting power (NOT totalWeight)
+beginWithdrawal(uint256 tokenId)
+withdraw(uint256 tokenId)
+cancelWithdrawalRequest(uint256 tokenId)
+resetVotesAndBeginWithdrawal(uint256 tokenId)   // legacy vKAT that still has gauge votes
 isVoting(uint256 tokenId) → bool
-usedVotingPower(uint256 tokenId) → uint256
+locked(uint256 tokenId) → (uint256 amount, uint256 start)
+ownedTokens(address owner) → uint256[]
+minDeposit() → uint256                          // minimum KAT per lock (230 KAT at time of writing)
 ```
 
-**Functions that DO NOT exist on this contract** (will revert):
-- `weights(address)` — use `gaugeVotes(address)` instead
-- `totalWeight()` — use `totalVotingPowerCast()` instead
-- `isAlive(address)` — use `gauges(address)` instead
-- `isGauge(address)` — use `gauges(address)` instead
-- `getActiveGauges()` — use `getAllGauges()` + `gauges(addr)` filter
-- `poolForGauge(address)` — does not exist (see Gauge = Pool below)
-
-### ExitQueue
+### Exit Queue
 ```
-cooldown() → uint256 seconds
-feePercent() → uint256 bps (max exit fee, rage quit)
-minFeePercent() → uint256 bps (min exit fee, after full cooldown)
-queue(uint256 tokenId) → (address holder, uint48 createdAt)
+cooldown() → uint256          // seconds, for new exits
+feePercent() → uint256        // max fee, bps, for new exits
+minFeePercent() → uint256     // min fee, bps, for new exits
+queue(uint256 tokenId)        // exit entry: holder, queued timestamp, and the cooldown/fee params locked at queue time
 canExit(uint256 tokenId) → bool
+calculateFee(uint256 tokenId) → uint256   // fee in KAT (wei) if withdrawn now
+```
+There is **no** `getQueueEntry` function — calls to it revert.
+
+### NFT Lock (ERC-721)
+```
+approve(address to, uint256 tokenId)
+setApprovalForAll(address operator, bool approved)
 ```
 
 ### KAT Token
@@ -178,63 +184,53 @@ transfer(address to, uint256 amount)
 approve(address spender, uint256 amount)
 ```
 
-## Workflows
-
-### Check KAT ecosystem state
-1. Read KAT price from Sushi V3 pool (see analytics skill for price derivation)
-2. Call `balanceOf(address)` on KAT token (`0x7F1f...2d`) and avKAT vault (`0x7231...eB`)
-3. See Contract Addresses table above for all ecosystem contracts
-
-### Stake KAT → vKAT (Active staking)
-1. Call `approve(VotingEscrow, amount)` on KAT token — approve VotingEscrow (`0x4d6fC15Ca6258b168225D283262743C623c13Ead`)
-2. Call `VotingEscrow.createLock(amount)` — mints a vKAT NFT
-
-### Deposit KAT → avKAT (Passive staking)
-1. Call `approve(avKATVault, amount)` on KAT token — approve avKAT Vault (`0x7231dbaCdFc968E07656D12389AB20De82FbfCeB`)
-2. Call `avKATVault.deposit(amount, receiver)` — returns avKAT shares
-
-### Unstake vKAT → KAT
-1. Ensure votes are reset: call `GaugeVoter.reset(tokenId)` or use `resetVotesAndBeginWithdrawal(tokenId)`
-2. Call `VotingEscrow.beginWithdrawal(tokenId)` — starts cooldown period
-3. Wait for cooldown to pass (fee decreases over time)
-4. Call `VotingEscrow.withdraw(tokenId)` — receive KAT minus exit fee
-
-### Exit avKAT → KAT (instant, no cooldown)
-1. Sell avKAT on SushiSwap — execute a swap via V3 SwapRouter (see dex skill for swap workflow)
-2. No protocol fee, subject to DEX slippage
-
-### Claim rewards (vKAT holders)
-1. Query Merkl API for unclaimed rewards: `https://api.merkl.xyz/v4/users/{address}?chainId=747474`
-2. Fetch proofs and call `claim()` on Merkl Distributor (see merkl skill for claiming workflow)
-
-## Gauge = Pool (Katana-specific)
-
-On Katana, gauge addresses **ARE** the pool addresses. There is no separate `poolForGauge()` mapping. To get pool info, call standard Uniswap V3 pool functions directly on the gauge address:
-
-| Function | Signature | Notes |
-|----------|-----------|-------|
-| Token 0 | `token0() → address` | Works on gauge address directly |
-| Token 1 | `token1() → address` | Works on gauge address directly |
-| Fee tier | `fee() → uint24` | 100=0.01%, 500=0.05%, 3000=0.3%, 10000=1% |
-
-**V2 vs V3 gauges:** Some gauges are V2 pools where `fee()` will revert. `token0()` and `token1()` still work. Handle gracefully and label as "V2".
-
 ## Common Mistakes
 
-- **KAT is fully transferable.** All transfers, staking to vKAT, and depositing to avKAT are enabled.
-- **Withdrawing without resetting votes.** A vKAT position with active gauge votes cannot begin withdrawal. Call `GaugeVoter.reset(tokenId)` first, or use the combined `resetVotesAndBeginWithdrawal(tokenId)`.
-- **Confusing vKAT and avKAT exit paths.** vKAT requires a cooldown period with exit fee (params read from ExitQueue contract). avKAT can be sold instantly on DEX with no protocol fee. Users wanting immediate exit should use the avKAT → DEX path.
-- **Expecting instant rewards.** Merkl rewards are computed offchain every ~2 hours and merkle roots are pushed onchain every ~8 hours. New stakers won't see rewards immediately.
-- **Approving the wrong contract.** Staking to vKAT requires approving VotingEscrow (`0x4d6f...3Ead`). Depositing to avKAT requires approving the vault (`0x7231...CeB`). Mixing these up will revert.
-- **Assuming Solidly/Velodrome ABI.** Katana's GaugeVoter uses non-standard function names. `weights()`, `totalWeight()`, `isAlive()`, `isGauge()`, `getActiveGauges()`, and `poolForGauge()` do NOT exist. See the GaugeVoter section above for correct names.
-- **Looking up gauge pools separately.** Gauge addresses ARE pool addresses on Katana. Call `token0()`, `token1()`, `fee()` directly on the gauge address.
+- **Recommending vKAT staking or gauge voting.** Both were sunset on November 17, 2026. Don't suggest `createLock`, gauge votes, `merge` or `split` for new activity. Stake into avKAT instead.
+- **Telling users to claim avKAT rewards.** avKAT compounds automatically every epoch; there is nothing to claim or restake.
+- **Describing rewards as emissions or vote incentives.** avKAT rewards come from revenue-funded KAT buybacks (Katana Swap, Katana Perps, Vault Bridge, sequencer fees).
+- **Using `redeem()` to unstake.** The unstake path is `withdrawTokenId` → `beginWithdrawal` → wait → `withdraw`.
+- **Passing avKAT shares to `withdrawTokenId`.** Its first argument is the KAT (assets) amount. Passing a share count silently unstakes less than intended.
+- **Unstaking less than the minimum.** Below `minDeposit()` (230 KAT at time of writing) of KAT value, `withdrawTokenId` reverts with `AmountTooSmall()`. Swap on the DEX instead.
+- **Quoting the new schedule for an exit already in progress.** Each exit keeps the terms it was queued with — read `queue(tokenId)` / `calculateFee(tokenId)` for that token.
+- **Calling `getQueueEntry`.** It doesn't exist on the ExitQueue. Use `queue`, `canExit` and `calculateFee`.
+- **Not mentioning the fee-free option.** Exiting before the full cooldown costs up to 25%. Always state the fee in KAT and that waiting the full cooldown is free (under the new schedule).
+- **Calling a DEX exit "free".** There's no protocol fee, but the swap is at the market rate and can be below the redeemable KAT value due to fees, price impact and thin liquidity. Quote first.
+- **Leaving a cancelled exit as vKAT.** A cancelled withdrawal leaves a vKAT NFT that earns nothing — redeposit it with `depositTokenId`.
+- **Surprise at fewer avKAT tokens.** Depositing KAT or converting vKAT returns fewer avKAT than KAT because each avKAT is worth more than 1 KAT. The underlying KAT is the same.
+- **Approving the wrong contract.** Depositing KAT requires approving the avKAT Vault (`0x7231...CeB`) on the KAT token. Converting vKAT requires approving the vault on the NFT Lock (`0x106F...296d`), not the VotingEscrow.
+- **Assuming the exchange rate is a price.** `convertToAssets` is measured in KAT; it says nothing about KAT's or avKAT's market price.
 - **Relying on the block explorer.** `explorer.katana.network` sits behind Cloudflare and may return 403/1000 errors. Don't rely on it for ABI lookups — use this reference instead.
-- **Calling `fee()` on V2 gauges.** Some gauges are V2 pools where `fee()` reverts. Handle gracefully.
+
+## Risks to Mention
+
+- Smart contract risk in the vault and supporting contracts
+- Variable rewards that depend on protocol revenue and network activity
+- avKAT DEX liquidity risk (slippage, price below underlying KAT value)
+- Exit fee of up to 25% before the cooldown completes
+- The staking and buyback program may be modified or ended
+
+## Legacy Reference: Gauge Voting (sunset)
+
+Only needed to interpret or unwind pre-sunset vKAT positions. Katana's GaugeVoter uses non-standard names — do **not** assume Solidly/Velodrome ABIs:
+
+```
+reset(uint256 tokenId)
+isVoting(uint256 tokenId) → bool
+getAllGauges() → address[]
+gauges(address gauge) → bool            // NOT isAlive/isGauge
+gaugeVotes(address gauge) → uint256     // NOT weights
+totalVotingPowerCast() → uint256        // NOT totalWeight
+```
+
+`weights()`, `totalWeight()`, `isAlive()`, `isGauge()`, `getActiveGauges()` and `poolForGauge()` do not exist. Gauge addresses are the pool addresses themselves (`token0()`, `token1()`, `fee()` work on them; `fee()` reverts on V2 pools).
+
+LP incentives for Katana Swap pools are now allocated by the **Katana Foundation**, not by gauge votes.
 
 ## Cross-References
 
-- **wallet-manager**: `approve()` patterns for VotingEscrow or avKAT Vault, balance checks for KAT/avKAT
-- **dex**: sell avKAT on SushiSwap for instant exit without cooldown
-- **merkl**: query Merkl API for KAT staking reward APRs, claiming workflow for vKAT rewards
+- **wallet-manager**: `approve()` patterns for the avKAT Vault and NFT Lock, balance checks for KAT/avKAT
+- **dex**: swap avKAT ↔ KAT on Katana Swap for an instant exit (quote first)
+- **merkl**: claim any leftover pre-sunset vote incentives; LP incentives on Katana Swap pools
 - **analytics**: on-chain price derivation for KAT, contract reference for all KAT ecosystem addresses
 - **lending**: Morpho markets may accept avKAT as collateral

@@ -23,12 +23,12 @@ Browse the existing skills to understand patterns and naming conventions before 
 | Skill | Activates When |
 |-------|---------------|
 | [`wallet-manager`](./skills/wallet-manager) | Balances, transfers, approvals, wrap/unwrap ETH |
-| [`dex`](./skills/dex) | Token swaps, quotes, pool analysis, LP provision on SushiSwap |
+| [`dex`](./skills/dex) | Token swaps, quotes, pool analysis, LP provision on Katana Swap (built on Sushi) |
 | [`lending`](./skills/lending) | Morpho markets, vaults, positions, leverage loops |
 | [`merkl`](./skills/merkl) | Reward discovery, yield farming, claiming Merkl rewards |
 | [`analytics`](./skills/analytics) | Token prices, gas costs, tx lookup, contract reference |
 | [`perps`](./skills/perps) | Perpetual futures — market data, orders, positions, withdrawals, and builder codes for building fee-earning perps products |
-| [`kat`](./skills/kat) | KAT token, staking (vKAT), auto-compounding vault (avKAT), gauge voting |
+| [`kat`](./skills/kat) | KAT staking with avKAT, converting vKAT to avKAT, unstaking and exits (cooldown, exit fees) |
 
 ---
 
@@ -42,8 +42,8 @@ Browse the existing skills to understand patterns and naming conventions before 
 | **Block time** | 1 second |
 | **Gas model** | EIP-1559 |
 | **WETH** | Yield-generating vbToken (Vault Bridge ETH) with WETH9 interface |
-| **Core protocols** | SushiSwap (DEX/AMM) + Morpho (lending) + Merkl (rewards) + Katana Perps (futures) |
-| **RPC** | `https://rpc.katana.network/` (mainnet) / `https://rpc-bokuto.katanarpc.com` (testnet) |
+| **Core protocols** | Katana Swap (DEX/AMM, built on Sushi) + Morpho (lending) + Merkl (rewards) + Katana Perps (futures) |
+| **RPC** | `https://rpc.katana.network/` (mainnet, backup `https://rpc.katanarpc.com/`) / `https://rpc-bokuto.katanarpc.com` (testnet) — free and rate-limited; use your own provider for heavy workloads |
 | **Explorer** | [katanascan.com](https://katanascan.com/) (mainnet) / [bokuto.katanascan.com](https://bokuto.katanascan.com/) (testnet) |
 
 ---
