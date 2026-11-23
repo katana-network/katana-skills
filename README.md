@@ -1,6 +1,6 @@
 # Katana Skills Hub
 
-Katana Skills Hub is an open skills collection that gives AI agents native access to DeFi on [Katana Network](https://katana.network) — a high-performance L2 blockchain. Check balances, execute swaps, manage lending positions, trade perpetual futures, claim rewards, and interact with the KAT token ecosystem, all through natural language.
+Katana Skills Hub is an open skills collection that gives AI agents native access to DeFi on [Katana](https://katana.network) — an onchain financial markets company that operates a Layer 2 blockchain. Katana owns and operates Katana Swap, Katana Perps and Vault Bridge, and partners with Morpho for lending. Check balances, execute swaps, manage lending positions, trade perpetual futures, claim rewards, and interact with the KAT token ecosystem, all through natural language.
 
 Built by Katana. Built for everyone.
 
@@ -42,7 +42,7 @@ Browse the existing skills to understand patterns and naming conventions before 
 | **Block time** | 1 second |
 | **Gas model** | EIP-1559 |
 | **WETH** | Yield-generating vbToken (Vault Bridge ETH) with WETH9 interface |
-| **Core protocols** | Katana Swap (DEX/AMM, built on Sushi) + Morpho (lending) + Merkl (rewards) + Katana Perps (futures) |
+| **Core apps** | Katana Swap (DEX/AMM, built on Sushi), Katana Perps (futures), Vault Bridge; lending through Katana's partner Morpho; Merkl (rewards) |
 | **RPC** | `https://rpc.katana.network/` (mainnet, backup `https://rpc.katanarpc.com/`) / `https://rpc-bokuto.katanarpc.com` (testnet) — free and rate-limited; use your own provider for heavy workloads |
 | **Explorer** | [katanascan.com](https://katanascan.com/) (mainnet) / [bokuto.katanascan.com](https://bokuto.katanascan.com/) (testnet) |
 
