@@ -4,12 +4,24 @@ description: Activate when the user wants to swap tokens, get trade quotes, chec
 license: MIT
 metadata:
   author: katana
-  version: '1.0.0'
+  version: '1.1.0'
 ---
 
 # DEX — Katana Swap (built on Sushi)
 
-Token swaps, trade quoting, pool analysis, and liquidity provision on Katana Swap (V3 + V2) on Katana Network. Katana Swap is Katana's DEX, built on Sushi's deployment on Katana — the contracts are Sushi contracts, so "Sushi", "SushiSwap" and "Katana Swap" all refer to the same venue.
+Token swaps, trade quoting, pool analysis, and liquidity provision on Katana Swap (V3 + V2) on Katana Network. Katana Swap is Katana's DEX, owned and operated by Katana and built on Sushi — the contracts are Sushi contracts, so if a user says "Sushi" or "SushiSwap" they mean Katana Swap. In everything you show the user, call it **Katana Swap** ("built on Sushi" is fine as context). Link users to `https://app.katana.network/pools` for swaps and pools — not to Sushi's site or `dex.katana.network`.
+
+## Routing: single-pool swaps vs Everlong
+
+The contract calls in this skill quote and swap through **one pool** (a V3 fee tier via `V3QuoterV2` / `V3SwapRouter`, or a direct V2 pair). A contract-level quote reflects that one pool only.
+
+The Katana app routes swaps through **Everlong**: routes and minimum amounts are computed offchain by the Everlong Swap API, and the Everlong Router executes them. Routed swaps can price better for large trades or pairs without a deep direct pool.
+
+- **Routed swaps need the user's own Everlong Swap API key.** Keys are by request — tell the user they must get one themselves: https://router.foreverlong.io/swap-api/guide#id-1.-obtain-an-api-key (guide: https://router.foreverlong.io/swap-api/guide)
+- With a key: `GET https://swap.foreverlong.io/v1/swap` with header `x-api-key` and params `tokenIn`, `tokenOut`, `amountIn` (base units / wei), `recipient`, `slippage`. It returns transaction calldata. Check `status == "Ok"` before sending, never modify the returned calldata, and approve the Everlong router for `tokenIn` first. Missing or invalid key → 401.
+- **Don't hardcode the Everlong Router address** — it changes when Everlong updates its router. Fetch the current one from https://router.foreverlong.io
+- Without a key, the router can only be called with a route and minimum amounts you compute yourself (your own routing algorithm). Otherwise use the single-pool flow below, or two swaps through WETH or USDC when no direct pool exists.
+- The previous Sushi routing contracts (RedSnwapper `0xAC4c6e212A361c968F1725b4d055b47E63F80b75`, RouteProcessor7 `0x3Ced11c610556e5292fBC2e75D68c3899098C14C`) are no longer used by the Katana app.
 
 ## Katana Swap Overview
 
@@ -191,6 +203,8 @@ Always show the user: expected output amount, minimum output (after slippage), a
 
 ## Common Mistakes
 
+- **Assuming a single-pool quote is the best available price.** For routed (multi-hop) swaps the user needs the Everlong Swap API and their own API key.
+- **Calling it SushiSwap or linking to Sushi.** Say Katana Swap and link `https://app.katana.network/pools`.
 - **Using a fee tier without quoting first.** Always call `quoteExactInputSingle` across all fee tiers before building a swap. Hardcoding `3000` may route through a worse pool.
 - **Invalid tick ranges for V3 LP.** `tickLower` and `tickUpper` must be divisible by the fee tier's tickSpacing (1 for 0.01%, 10 for 0.05%, 60 for 0.3%, 200 for 1%). Non-divisible ticks will revert on-chain. Read `slot0()` to get the current tick and calculate valid boundaries.
 - **Approving the wrong router.** V3 swaps need approval for SwapRouter (`0x4e1d...376C`), V3 LP needs PositionManager (`0x2659...3d27`), V2 uses V2 Router (`0x69cC...b68E`). Mixing these up means the tx will revert with an allowance error.
